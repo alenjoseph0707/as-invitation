@@ -1003,5 +1003,165 @@
   // Start countdown immediately (will show -- until curtain opens)
   startCountdown();
 </script>
+ // ========== FLOATING AMBIENT EFFECTS ==========
+// Add this script just before closing </body> tag
+
+(function() {
+  const floatingContainer = document.createElement('div');
+  floatingContainer.id = 'floating-effects-container';
+  floatingContainer.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    overflow: hidden;
+  `;
+  document.body.appendChild(floatingContainer);
+
+  // Add animation styles
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `
+    @keyframes float-up {
+      0% {
+        opacity: 0;
+        transform: translateY(100vh) translateX(0) rotate(0deg);
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100vh) translateX(var(--drift-x, 100px)) rotate(360deg);
+      }
+    }
+
+    @keyframes float-sideways {
+      0% {
+        opacity: 0;
+        transform: translateY(100vh) translateX(0) scale(1);
+      }
+      10% {
+        opacity: 0.8;
+      }
+      90% {
+        opacity: 0.6;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100vh) translateX(var(--drift-x, 150px)) scale(0.3);
+      }
+    }
+
+    @keyframes sparkle {
+      0%, 100% {
+        opacity: 0;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .floating-element {
+      position: absolute;
+      bottom: -50px;
+      will-change: transform;
+      animation: float-up var(--duration, 6s) linear infinite;
+    }
+
+    .floating-element.petal {
+      animation: float-sideways var(--duration, 7s) ease-in infinite;
+    }
+
+    .floating-element.sparkle {
+      animation: sparkle var(--duration, 2s) ease-in-out infinite, float-up var(--float-duration, 8s) linear infinite;
+    }
+  `;
+  document.head.appendChild(styleSheet);
+
+  // Element types and their SVG
+  const elements = {
+    heart: `<svg viewBox="0 0 24 24" width="20" height="20" fill="#C8A856" opacity="0.6">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+    </svg>`,
+    
+    petal: `<svg viewBox="0 0 24 24" width="18" height="18" fill="#D4B56A" opacity="0.5">
+      <ellipse cx="12" cy="6" rx="8" ry="12" transform="rotate(-20 12 12)"/>
+    </svg>`,
+    
+    sparkle: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#E8D5A3">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>`,
+    
+    dot: `<svg viewBox="0 0 24 24" width="6" height="6" fill="#A08030" opacity="0.4">
+      <circle cx="12" cy="12" r="3"/>
+    </svg>`
+  };
+
+  const elementTypes = Object.keys(elements);
+
+  function createFloatingElement() {
+    const type = elementTypes[Math.floor(Math.random() * elementTypes.length)];
+    const element = document.createElement('div');
+    element.className = `floating-element ${type}`;
+    element.innerHTML = elements[type];
+
+    // Random properties
+    const duration = type === 'sparkle' ? Math.random() * 2 + 1.5 : Math.random() * 3 + 5;
+    const floatDuration = Math.random() * 4 + 6;
+    const startLeft = Math.random() * 100;
+    const driftX = (Math.random() - 0.5) * 200;
+    const delay = Math.random() * 0.5;
+
+    element.style.cssText = `
+      left: ${startLeft}%;
+      --duration: ${duration}s;
+      --float-duration: ${floatDuration}s;
+      --drift-x: ${driftX}px;
+      animation-delay: ${delay}s;
+    `;
+
+    floatingContainer.appendChild(element);
+
+    // Remove after animation completes
+    setTimeout(() => {
+      element.remove();
+    }, (duration + delay) * 1000);
+  }
+
+  // Start creating floating elements when curtain opens
+  const originalOpenCurtains = window.openCurtains;
+  window.openCurtains = function() {
+    originalOpenCurtains();
+    // Start floating elements after curtain opens
+    setTimeout(() => {
+      startFloatingElements();
+    }, 1800);
+  };
+
+  function startFloatingElements() {
+    // Create initial elements
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => createFloatingElement(), i * 200);
+    }
+
+    // Continue creating elements at intervals
+    setInterval(() => {
+      createFloatingElement();
+    }, 1200);
+  }
+
+  // If page loads and curtain is already opened, start effects
+  window.addEventListener('load', () => {
+    if (document.getElementById('curtain-overlay').classList.contains('hidden')) {
+      startFloatingElements();
+    }
+  });
+})();
 </body>
 </html>
